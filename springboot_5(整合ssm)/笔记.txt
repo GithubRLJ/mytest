@@ -1,0 +1,258 @@
+# ssm框架整合
+
+### 
+
+##### 1）、 需要在新建项目加入mybatis的依赖，或者一开始就勾选好
+
+需要mybatis、mysql、druid、log4j等依赖
+
+```xml
+<dependency>
+		<groupId>org.mybatis.spring.boot</groupId>
+		<artifactId>mybatis-spring-boot-starter</artifactId>
+		<version>1.3.2</version>
+</dependency>
+
+<dependency>
+		<groupId>mysql</groupId>
+		<artifactId>mysql-connector-java</artifactId>
+		<scope>runtime</scope>
+</dependency>
+
+<dependency>
+		<groupId>com.alibaba</groupId>
+		<artifactId>druid</artifactId>
+		<version>1.1.12</version>
+</dependency>
+
+<dependency>
+		<groupId>log4j</groupId>
+		<artifactId>log4j</artifactId>
+		<version>1.2.17</version>
+</dependency>
+```
+
+##### 2）、逆向工程的使用
+
+配置mybatis generator的插件，用于自动生成 
+
+~~~xml
+
+<plugin>
+   <groupId>org.mybatis.generator</groupId>
+   <artifactId>mybatis-generator-maven-plugin</artifactId>
+   <version>1.3.3</version>
+   <dependencies>
+   	  <dependency>
+		<groupId> mysql</groupId>
+		<artifactId> mysql-connector-java</artifactId>
+		<version>5.1.46</version>
+	  </dependency>
+      <dependency>
+         <groupId>org.mybatis.generator</groupId>
+         <artifactId>mybatis-generator-core</artifactId>
+         <version>1.3.5</version>
+      </dependency>
+   </dependencies>
+   <configuration>
+       <!--允许移动生成的文件 -->
+       <verbose>true</verbose>
+       <!-- 是否覆盖 -->
+       <overwrite>true</overwrite>
+       <!-- 设置配置文件路径 -->
+       <configurationFile>
+        src/main/resources/generatorConfig.xml</configurationFile>
+    </configuration>
+
+</plugin>
+
+~~~
+
+在resouce目录下创建generatorConfig.xml文件 
+
+~~~xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE generatorConfiguration
+  PUBLIC "-//mybatis.org//DTD MyBatis Generator Configuration 1.0//EN"
+  "http://mybatis.org/dtd/mybatis-generator-config_1_0.dtd">
+
+<generatorConfiguration>
+
+   <context id="testTables" targetRuntime="MyBatis3">
+      <commentGenerator>
+         <!-- 是否去除自动生成的注释 true：是 ： false:否 -->
+         <property name="suppressAllComments" value="true" />
+      </commentGenerator>
+      <!--数据库连接的信息：驱动类、连接地址、用户名、密码 -->
+      <jdbcConnection driverClass="com.mysql.jdbc.Driver"
+         connectionURL="jdbc:mysql://localhost:3306/db" userId="root"
+         password="">
+      </jdbcConnection>
+      <!-- 默认false，把JDBC DECIMAL 和 NUMERIC 类型解析为 Integer，为 true时把JDBC DECIMAL 和 
+         NUMERIC 类型解析为java.math.BigDecimal -->
+      <javaTypeResolver>
+         <property name="forceBigDecimals" value="false" />
+      </javaTypeResolver>
+
+      <!-- targetProject:生成entity类的位置 -->
+      <javaModelGenerator targetPackage="com.hr.entity"
+                     targetProject="src/main/java">
+         <!-- enableSubPackages:是否让schema作为包的后缀 -->
+         <property name="enableSubPackages" value="false" />
+         <!-- 从数据库返回的值被清理前后的空格 -->
+         <property name="trimStrings" value="true" />
+      </javaModelGenerator>
+        <!-- targetProject:mapper映射文件生成的位置 -->
+      <sqlMapGenerator targetPackage="mapper"
+                   targetProject="src/main/resources">
+         <!-- enableSubPackages:是否让schema作为包的后缀 -->
+         <property name="enableSubPackages" value="false" />
+      </sqlMapGenerator>
+      <!-- targetPackage：mapper接口生成的位置 -->
+      <javaClientGenerator type="XMLMAPPER"
+         targetPackage="com.hr.mapper"
+                      targetProject="src/main/java">
+         <!-- enableSubPackages:是否让schema作为包的后缀 -->
+         <property name="enableSubPackages" value="false" />
+      </javaClientGenerator>
+      <!-- 指定数据库表 -->
+      <table schema="" tableName="user"></table>
+
+      
+      <!-- 有些表的字段需要指定java类型
+       <table schema="" tableName="">
+         <columnOverride column="" javaType="" />
+      </table> -->
+   </context>
+</generatorConfiguration>
+
+~~~
+
+如果需要配置红色，意味着需要配置dtd   --->  搜索dtd即可找到
+
+~~~xml
+<!DOCTYPE generatorConfiguration
+  PUBLIC "-//mybatis.org//DTD MyBatis Generator Configuration 1.0//EN"
+  "http://mybatis.org/dtd/mybatis-generator-config_1_0.dtd">
+~~~
+
+
+
+![](img1.png)
+
+使用Maven编译生成entity和mapper文件(mybatis-generator:generate -e) 
+
+![](img2.png)
+
+##### 3）、加载mapper配置文件
+
+~~~properties
+# useUnicode=true&characterEncoding=utf8 编码  autoReconnect=true 超时重连 useSSL=true版本兼容   serverTimezone=GMT%2B8 时间设置
+spring.datasource.url=jdbc:mysql://localhost:3306/student?useUnicode=true&characterEncoding=utf8&autoReconnect=true&useSSL=true&serverTimezone=GMT%2B8
+spring.datasource.username=root
+spring.datasource.password=
+spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+spring.datasource.type=com.alibaba.druid.pool.DruidDataSource
+# 下面为连接池的补充设置，应用到上面所有数据源中
+# 初始化大小，最小，最大
+spring.datasource.initialSize=5
+spring.datasource.minIdle=1
+spring.datasource.maxActive=50
+# 配置获取连接等待超时的时间
+spring.datasource.maxWait=60000
+# 配置间隔多久才进行一次检测，检测需要关闭的空闲连接，单位是毫秒
+spring.datasource.timeBetweenEvictionRunsMillis=60000
+# 配置一个连接在池中最小生存的时间，单位是毫秒
+spring.datasource.minEvictableIdleTimeMillis=300000
+
+#读取mapper文件
+mybatis.mapper-locations=classpath:mapper/*.xml
+
+#输出sql语句
+logging.level.com.hr.mapper: debug
+~~~
+
+##### 4）、mybatis 注解开发
+
+##### 基本操作
+
+```java
+@Mapper
+public interface StudentMapper {
+
+    @Select("select * from student")
+    @Results(id = "stuMap", value = {
+            @Result(property = "sid", column = "sid"),
+            @Result(property = "sname", column = "sname"),
+            @Result(property = "age",column = "age"),
+            @Result(property = "created",column = "created")
+    })
+    public List<Student> queryStudent();
+
+    @Insert("insert into student (sname,age,created) values (#{sname},#{age},#{created})")
+    @Options(useGeneratedKeys = true,keyProperty = "sid",keyColumn = "sid")
+   /* @SelectKey(statement = "select last_insert_id()",keyProperty = "sid",
+            keyColumn = "sid",resultType = int.class,before = false)*/
+    public int addStudent(Student s);
+
+    @Update("update student set sname=#{sname},age=#{age},created=#{created} where sid=#{sid}")
+    public int updStudent(Student s);
+
+    @Delete("delete from student where sid=#{sid}")
+    public int deleteStudent(int sid);
+
+
+    @Select("select * from student")
+    @ResultMap("stuMap")
+    public List<Student> queryStudent2();
+}
+```
+
+##### 连接查询    多对一
+
+~~~java
+@Select("select * from book ")
+    @Results(id="bookMap",value = {
+            @Result(property = "bid",column = "bid"),
+            @Result(property = "bname",column = "bname"),
+            @Result(property = "author",column = "aid",one = @One(select = "com.hr.mapper.AuthorMapper.queryAuthorById",fetchType = FetchType.LAZY)),
+    })
+    public List<Book> queryBook();
+~~~
+
+##### 连接查询   一对多
+
+~~~java
+@Select("select * from author")
+    @Results(id = "atMap",value = {
+            @Result(id = true,property = "aid",column = "aid"),
+            @Result(property = "aname",column = "aname"),
+            @Result(property = "blist",column = "aid",many =
+            @Many(select = "com.hr.mapper.BookMapper.queryBookList",fetchType = FetchType.LAZY))
+    })
+    public List<Author> queryAuthor();
+~~~
+
+
+
+
+
+##### 5）、批量扫描包
+
+```java
+//将包加在springboot的启动器上     如果加上了，不用每个包加@mapper注解
+@MapperScan(value = "com.hr.mapper")
+```
+
+##### 6）、删除后跳转（进入controller的其他方法，而不是直接去前台）
+
+~~~java
+@RequestMapping("delete")
+public String delete(int sid){
+
+       studentService.delete(sid);
+
+       return "redirect:/query";
+}
+~~~
+
